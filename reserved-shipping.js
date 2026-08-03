@@ -2,8 +2,6 @@
   'use strict';
 
   var BADGE_TEXT = '예약배송';
-  var RENDER_DELAY = 150;
-
   var skuCache = {};
   var pendingCache = {};
   var renderTimer = null;
@@ -15,7 +13,7 @@
   }
 
   /*
-   * 아임웹 onclick에서 옵션 데이터 추출
+   * onclick에서 상품·옵션 정보 추출
    */
   function parseOption($element) {
     if (!$element || !$element.length) {
@@ -41,110 +39,173 @@
   }
 
   /*
-   * 옵션 영역 제목 확인
+   * 드롭다운 상단에 표시되는 현재 값
    */
-  function getWrapTitle($wrap) {
-    var $column = $wrap.closest(
-      '.col-xs-12, .col-md-12, ._form_parent'
+  function getToggleText($wrap) {
+    return normalize(
+      $wrap.find('> .dropdown-toggle').first().text()
     );
-
-    var $title = $column
-      .find('.option_title')
-      .first()
-      .clone();
-
-    $title.children().remove();
-
-    return normalize($title.text());
-  }
-
-  function isColorWrap($wrap) {
-    var title = getWrapTitle($wrap);
-
-    return (
-      title.indexOf('컬러') !== -1 ||
-      title.indexOf('색상') !== -1
-    );
-  }
-
-  function isSizeWrap($wrap) {
-    return getWrapTitle($wrap).indexOf('사이즈') !== -1;
   }
 
   /*
-   * PC·모바일 전체 옵션 영역에서 현재 선택된 컬러 확인
+   * 모바일·PC 사이즈 영역 판별
+   *
+   * 모바일은 option_title이 "필수옵션" 하나뿐이므로
+   * dropdown-toggle의 "사이즈" 텍스트로 판별합니다.
    */
-  function getSelectedColor() {
-    var selectedColor = null;
+  function isSizeWrap($wrap) {
+    var toggleText = getToggleText($wrap);
 
-    $('.form-select-wrap').each(function () {
-      var $wrap = $(this);
+    if (toggleText.indexOf('사이즈') !== -1) {
+      return true;
+    }
 
-      if (!isColorWrap($wrap)) {
-        return;
-      }
+    /*
+     * 이미 사이즈가 선택돼 버튼에 M, L 등이 표시되는 구조 대응
+     */
+    var optionNames = [];
 
-      var selectedName = normalize(
-        $wrap.find('.dropdown-toggle').first().text()
-      );
-
-      if (
-        !selectedName ||
-        selectedName === '컬러' ||
-        selectedName === '색상' ||
-        selectedName.indexOf('필수') !== -1
-      ) {
-        return;
-      }
-
-      /*
-       * selected 클래스가 있는 컬러값 우선
-       */
-      var $selectedItem = $wrap
-        .find('.dropdown-item.selected')
-        .first();
-
-      var selectedData = parseOption(
-        $selectedItem
+    $wrap.find('.dropdown-item').each(function () {
+      var data = parseOption(
+        $(this)
           .find('[onclick*="selectRequireOption"]')
           .first()
       );
 
-      if (selectedData) {
-        selectedColor = selectedData;
-        return false;
+      if (data) {
+        optionNames.push(normalize(data.valueName));
+      }
+    });
+
+    if (!optionNames.length) {
+      return false;
+    }
+
+    var sizePattern =
+      /^(XS|S|M|L|XL|XXL|XXXL|[2-9]XL|FREE|F|숏|롱|SHORT|LONG)$/i;
+
+    var sizeCount = optionNames.filter(function (name) {
+      return sizePattern.test(name);
+    }).length;
+
+    return sizeCount >= Math.ceil(optionNames.length / 2);
+  }
+
+  /*
+   * 같은 옵션 박스에서 사이즈 영역 바로 앞의 컬러 영역 찾기
+   */
+  function findColorWrap($sizeWrap) {
+    var $container = $sizeWrap.closest(
+      '.goods_select, #prod_options, #goods_wrap'
+    );
+
+    if (!$container.length) {
+      $container = $(document.body);
+    }
+
+    var $wraps = $container.find('.form-select-wrap');
+    var sizeIndex = $wraps.index($sizeWrap);
+    var $result = $();
+
+    /*
+     * 사이즈 앞쪽에서 가장 가까운 선택형 옵션 탐색
+     */
+    for (var i = sizeIndex - 1; i >= 0; i--) {
+      var $candidate = $wraps.eq(i);
+      var text = getToggleText($candidate);
+
+      if (isSizeWrap($candidate)) {
+        continue;
+      }
+
+      if (
+        !text ||
+        text.indexOf('사이즈') !== -1
+      ) {
+        continue;
       }
 
       /*
-       * 드롭다운 표시 텍스트와 같은 컬러값 찾기
+       * 컬러가 선택된 경우: 블랙, 그레이 등
        */
-      $wrap.find('.dropdown-item').each(function () {
-        var optionData = parseOption(
-          $(this)
-            .find('[onclick*="selectRequireOption"]')
-            .first()
-        );
+      if (
+        text.indexOf('컬러') === -1 &&
+        text.indexOf('색상') === -1 &&
+        text.indexOf('필수') === -1
+      ) {
+        $result = $candidate;
+        break;
+      }
 
-        if (
-          optionData &&
-          normalize(optionData.valueName) === selectedName
-        ) {
-          selectedColor = optionData;
-          return false;
-        }
-      });
+      /*
+       * 선택 전 컬러 영역도 후보로 저장
+       */
+      if (!$result.length) {
+        $result = $candidate;
+      }
+    }
 
-      if (selectedColor) {
+    return $result;
+  }
+
+  /*
+   * 컬러 영역에서 현재 선택된 컬러 데이터 확인
+   */
+  function getSelectedColor($colorWrap) {
+    if (!$colorWrap || !$colorWrap.length) {
+      return null;
+    }
+
+    var selectedData = null;
+
+    /*
+     * selected 클래스 우선
+     */
+    var $selected = $colorWrap
+      .find('.dropdown-item.selected')
+      .first()
+      .find('[onclick*="selectRequireOption"]')
+      .first();
+
+    selectedData = parseOption($selected);
+
+    if (selectedData) {
+      return selectedData;
+    }
+
+    /*
+     * 모바일은 dropdown-toggle에 "블랙"처럼 선택값 표시
+     */
+    var selectedName = getToggleText($colorWrap);
+
+    if (
+      !selectedName ||
+      selectedName.indexOf('컬러') !== -1 ||
+      selectedName.indexOf('색상') !== -1 ||
+      selectedName.indexOf('필수') !== -1
+    ) {
+      return null;
+    }
+
+    $colorWrap.find('.dropdown-item').each(function () {
+      var data = parseOption(
+        $(this)
+          .find('[onclick*="selectRequireOption"]')
+          .first()
+      );
+
+      if (
+        data &&
+        normalize(data.valueName) === selectedName
+      ) {
+        selectedData = data;
         return false;
       }
     });
 
-    return selectedColor;
+    return selectedData;
   }
 
-  /*
-   * 예약배송 문구인지 확인
-   */
   function isReservedSku(skuNo) {
     skuNo = normalize(skuNo);
 
@@ -155,9 +216,6 @@
     );
   }
 
-  /*
-   * select_option.cm 요청 데이터
-   */
   function buildPayload(color, size) {
     return {
       prod_idx: size.prodIdx || color.prodIdx,
@@ -179,10 +237,7 @@
     };
   }
 
-  /*
-   * 컬러 + 사이즈 조합별 SKU 조회
-   */
-  function getSku(color, size) {
+  function requestSku(color, size) {
     var key = [
       size.prodIdx || color.prodIdx,
       color.valueCode,
@@ -241,7 +296,7 @@
   }
 
   /*
-   * 예약배송 문구 삽입
+   * 사이즈 옵션 행에 문구 삽입
    */
   function insertMessage($item, skuNo, key) {
     $item.find('.reserved-shipping-text').remove();
@@ -260,9 +315,36 @@
       .first();
 
     if (!$sizeName.length) {
+      $sizeName = $item
+        .find('.tw-flex-row span.blocked')
+        .filter(function () {
+          var text = normalize($(this).text());
+
+          return (
+            text &&
+            text.indexOf('남음') === -1 &&
+            text.indexOf('품절') === -1
+          );
+        })
+        .first();
+    }
+
+    if (!$sizeName.length) {
       return;
     }
 
+    /*
+     * 모바일 구조:
+     *
+     * a
+     * ├─ low-stock-nudge-option
+     * └─ div.tw-flex-row
+     *     └─ div
+     *         ├─ span 사이즈명
+     *         └─ span
+     *
+     * 안쪽 div에 예약배송 문구 삽입
+     */
     var $content = $sizeName.parent();
 
     if (!$content.length) {
@@ -294,101 +376,90 @@
   }
 
   /*
-   * 모든 PC·모바일 사이즈 목록 처리
+   * 모바일·PC 사이즈 영역 처리
    */
-  function renderReservedShipping() {
-    var color = getSelectedColor();
+  function renderSizeWrap($sizeWrap) {
+    var $colorWrap = findColorWrap($sizeWrap);
+    var color = getSelectedColor($colorWrap);
 
     if (!color) {
       return;
     }
 
-    $('.form-select-wrap').each(function () {
-      var $sizeWrap = $(this);
+    $sizeWrap
+      .find('.dropdown-item')
+      .each(function () {
+        var $item = $(this);
 
-      if (!isSizeWrap($sizeWrap)) {
-        return;
-      }
+        var size = parseOption(
+          $item
+            .find('[onclick*="selectRequireOption"]')
+            .first()
+        );
 
-      $sizeWrap
-        .find('.dropdown-item')
-        .each(function () {
-          var $item = $(this);
+        if (!size) {
+          return;
+        }
 
-          var size = parseOption(
-            $item
-              .find('[onclick*="selectRequireOption"]')
-              .first()
-          );
+        if (
+          String(size.prodIdx) !==
+          String(color.prodIdx)
+        ) {
+          return;
+        }
 
-          if (!size) {
-            return;
-          }
+        var key = [
+          color.valueCode,
+          size.valueCode
+        ].join('|');
 
-          if (
-            String(size.prodIdx) !==
-            String(color.prodIdx)
-          ) {
-            return;
-          }
+        if (
+          $item.attr('data-reserved-key') === key &&
+          $item.attr('data-reserved-loaded') === 'true'
+        ) {
+          return;
+        }
 
-          var key = [
-            color.valueCode,
-            size.valueCode
-          ].join('|');
+        $item.attr('data-reserved-key', key);
 
-          if (
-            $item.attr('data-reserved-key') === key &&
-            $item.attr('data-reserved-loaded') === 'true'
-          ) {
-            return;
-          }
+        requestSku(color, size).done(function (skuNo) {
+          /*
+           * AJAX 완료 시점에 DOM이 교체됐을 수 있어
+           * 같은 사이즈 코드를 현재 영역에서 다시 탐색
+           */
+          $sizeWrap
+            .find('.dropdown-item')
+            .each(function () {
+              var $currentItem = $(this);
 
-          $item.attr('data-reserved-key', key);
+              var currentSize = parseOption(
+                $currentItem
+                  .find('[onclick*="selectRequireOption"]')
+                  .first()
+              );
 
-          getSku(color, size).done(function (skuNo) {
-            /*
-             * 현재 DOM에서 같은 옵션 행 다시 찾기
-             */
-            var $currentItem = $();
-
-            $('.form-select-wrap').each(function () {
-              var $currentWrap = $(this);
-
-              if (!isSizeWrap($currentWrap)) {
-                return;
+              if (
+                currentSize &&
+                currentSize.valueCode === size.valueCode
+              ) {
+                insertMessage(
+                  $currentItem,
+                  skuNo,
+                  key
+                );
               }
-
-              $currentWrap
-                .find('.dropdown-item')
-                .each(function () {
-                  var $candidate = $(this);
-
-                  var candidate = parseOption(
-                    $candidate
-                      .find('[onclick*="selectRequireOption"]')
-                      .first()
-                  );
-
-                  if (
-                    candidate &&
-                    candidate.prodIdx === size.prodIdx &&
-                    candidate.valueCode === size.valueCode
-                  ) {
-                    /*
-                     * PC와 모바일에 동일 옵션 행이 모두 존재할 수 있어
-                     * 발견한 모든 행에 적용
-                     */
-                    insertMessage(
-                      $candidate,
-                      skuNo,
-                      key
-                    );
-                  }
-                });
             });
-          });
         });
+      });
+  }
+
+  function renderAll() {
+    $('.form-select-wrap').each(function () {
+      var $wrap = $(this);
+
+      if (isSizeWrap($wrap)) {
+        renderSizeWrap($wrap);
+      }
     });
   }
 
@@ -396,13 +467,13 @@
     clearTimeout(renderTimer);
 
     renderTimer = setTimeout(
-      renderReservedShipping,
-      RENDER_DELAY
+      renderAll,
+      120
     );
   }
 
   /*
-   * 옵션 클릭 후 아임웹 HTML 갱신 대응
+   * 모바일 컬러 선택 후 옵션 HTML 교체 대응
    */
   $(document).on(
     'click',
@@ -410,9 +481,9 @@
     '.form-select-wrap .dropdown-toggle',
     function () {
       scheduleRender();
-      setTimeout(scheduleRender, 300);
-      setTimeout(scheduleRender, 700);
-      setTimeout(scheduleRender, 1200);
+      setTimeout(scheduleRender, 250);
+      setTimeout(scheduleRender, 600);
+      setTimeout(scheduleRender, 1000);
     }
   );
 
@@ -431,13 +502,10 @@
     }
   });
 
-  /*
-   * 모바일 옵션창이 나중에 생성되는 경우 대응
-   */
   var observer = new MutationObserver(function (
     mutations
   ) {
-    var shouldRender = false;
+    var changed = false;
 
     mutations.forEach(function (mutation) {
       Array.prototype.forEach.call(
@@ -467,13 +535,13 @@
               '.dropdown-item'
             ).length
           ) {
-            shouldRender = true;
+            changed = true;
           }
         }
       );
     });
 
-    if (shouldRender) {
+    if (changed) {
       scheduleRender();
     }
   });
@@ -486,7 +554,7 @@
 
     scheduleRender();
     setTimeout(scheduleRender, 500);
-    setTimeout(scheduleRender, 1200);
+    setTimeout(scheduleRender, 1000);
   });
 
 })(jQuery);
