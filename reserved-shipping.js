@@ -85,9 +85,16 @@
       title.indexOf('색상') !== -1
     );
   }
-
+  
   function isSizeWrap($wrap) {
-    return getOptionTitle($wrap).indexOf('사이즈') !== -1;
+    var title = getOptionTitle($wrap);
+    var toggleText = normalizeText($wrap.find('.dropdown-toggle').first().text());
+  
+    return (
+      title.indexOf('사이즈') !== -1 ||
+      toggleText === '사이즈' ||
+      toggleText.indexOf('사이즈') !== -1
+    );
   }
 
   /*
