@@ -818,6 +818,8 @@
     );
   }
 
+  window.findOptionGroups = findOptionGroups; // 디버그용 - 확인 후 삭제 가능
+  
   $(initialize);
 
 })(jQuery);
