@@ -39,9 +39,15 @@
       ));
 
       if (!productSettings.length) return;
-
+      
+      /* 예약배송 상품 표시용 body 클래스 */
+      document.body.classList.add("is-reserve-delivery");
+      
+      /* 상세페이지 배송 정보 자동 생성 */
+      syncDetailDeliveryNotice();
+      
       startObserver();
-
+      
       /* 페이지 로딩 후 즉시 1차 분석 */
       analyzeOptions();
 
@@ -85,7 +91,8 @@
           if (
             node.classList.contains("reserved-shipping-text") ||
             node.classList.contains("reserved-shipping-date") ||
-            node.classList.contains("reserved-shipping-badge")
+            node.classList.contains("reserved-shipping-badge") ||
+            node.classList.contains("prod-detail-section--reserve-notice")
           ) {
             return false;
           }
@@ -225,7 +232,10 @@
   ======================================== */
 
   function analyzeOptions() {
-
+  
+    /* 배송정보 영역이 늦게 생성되는 경우 재확인 */
+    syncDetailDeliveryNotice();
+  
     const root =
       getVisibleProductOptions();
 
@@ -1376,7 +1386,286 @@
   }
 
 
+  
+/* ========================================
+   상세페이지 배송 정보 자동 생성
+======================================== */
 
+function syncDetailDeliveryNotice() {
+
+  if (!productSettings.length) return;
+
+
+  /*
+    시트 데이터 예시
+
+    Black / S / 8/14 이후 순차 출고
+    Black / L / 8/19 이후 순차 출고
+
+    ↓
+
+    Black(S) 8월 14일 / Black(L) 8월 19일 이후 순차 출고됩니다.
+  */
+
+  const notices = [];
+
+  const usedKeys = new Set();
+
+
+  productSettings.forEach(item => {
+
+    const color =
+      cleanText(item.color);
+
+
+    const size =
+      cleanText(item.size);
+
+
+    const message =
+      cleanText(item.message);
+
+
+    if (!color || !message) return;
+
+
+    /*
+      동일 옵션 중복 방지
+    */
+
+    const key =
+      normalizeOption(color)
+      + "|"
+      + normalizeOption(size)
+      + "|"
+      + message;
+
+
+    if (usedKeys.has(key)) return;
+
+    usedKeys.add(key);
+
+
+
+    /*
+      8/14 이후 순차 출고
+      ↓
+      8월 14일
+    */
+
+    const dateText =
+      convertShippingDate(message);
+
+
+    /*
+      사이즈 있음
+
+      Black(S)
+    */
+
+    const optionText =
+      size
+        ? color + "(" + size + ")"
+        : color;
+
+
+    if (dateText) {
+
+      notices.push(
+        optionText + " " + dateText
+      );
+
+    } else {
+
+      /*
+        날짜 형식을 인식하지 못한 경우
+        원래 시트 문구 사용
+      */
+
+      notices.push(
+        optionText + " " + message
+      );
+
+    }
+
+  });
+
+
+  if (!notices.length) return;
+
+
+
+  /*
+    최종 문구
+
+    Black(S) 8월 14일 /
+    Black(L) 8월 19일 이후 순차 출고됩니다.
+  */
+
+  const finalMessage =
+    notices.join(" / ")
+    + " 이후 순차 출고됩니다.";
+
+
+
+  /*
+    이미 생성되어 있으면 내용만 갱신
+  */
+
+  const existing =
+    document.querySelector(
+      ".prod-detail-section--reserve-notice"
+    );
+
+
+  if (existing) {
+
+    const content =
+      existing.querySelector(
+        ".prod-detail-section__content"
+      );
+
+
+    if (
+      content &&
+      cleanText(content.textContent) !==
+      cleanText(finalMessage)
+    ) {
+
+      content.textContent =
+        finalMessage;
+
+    }
+
+
+    return;
+
+  }
+
+
+
+  /*
+    기존 배송 정보 섹션 찾기
+  */
+
+  const deliverySection =
+    document.querySelector(
+      ".prod-detail-section--delivery"
+    );
+
+
+  /*
+    아임웹 DOM이 아직 생성 전이면
+    MutationObserver가 다시 실행할 때 재시도
+  */
+
+  if (!deliverySection) return;
+
+
+
+  /*
+    새 배송 정보 영역 생성
+  */
+
+  const newSection =
+    document.createElement("div");
+
+
+  newSection.className =
+    "prod-detail-section prod-detail-section--reserve-notice";
+
+
+  const title =
+    document.createElement("div");
+
+
+  title.className =
+    "prod-detail-section__title";
+
+
+  title.textContent =
+    "배송 정보";
+
+
+
+  const content =
+    document.createElement("div");
+
+
+  content.className =
+    "prod-detail-section__content";
+
+
+  content.textContent =
+    finalMessage;
+
+
+
+  newSection.appendChild(title);
+
+  newSection.appendChild(content);
+
+
+
+  /*
+    기존 배송정보 바로 아래 삽입
+  */
+
+  deliverySection.insertAdjacentElement(
+    "afterend",
+    newSection
+  );
+
+}
+
+
+
+/* ========================================
+   예약배송 날짜 변환
+
+   8/14 이후 순차 출고
+   → 8월 14일
+======================================== */
+
+function convertShippingDate(message) {
+
+  const match =
+    String(message || "")
+      .match(
+        /(\d{1,2})\s*\/\s*(\d{1,2})/
+      );
+
+
+  if (!match) return "";
+
+
+  const month =
+    Number(match[1]);
+
+
+  const day =
+    Number(match[2]);
+
+
+  if (
+    !month ||
+    !day
+  ) {
+    return "";
+  }
+
+
+  return (
+    month
+    + "월 "
+    + day
+    + "일"
+  );
+
+}
+
+
+  
   /* ========================================
      UTIL
   ======================================== */
