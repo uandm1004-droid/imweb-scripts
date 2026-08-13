@@ -109,3 +109,11 @@ a._requireOption
   margin-top: 8px;
 
 }
+
+
+/* ========================================
+   모바일 font style
+======================================== */
+
+.form-select-wrap .dropdown-menu .dropdown-item > a { padding: 10px !important; }
+.form-select-wrap .dropdown-menu .dropdown-item > a span { font-size: 13px; }
