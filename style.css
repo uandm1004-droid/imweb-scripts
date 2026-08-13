@@ -24,9 +24,7 @@ a._requireOption
 a._requireOption
 > .tw-flex
 > div:first-child {
-
   flex: 0 1 auto;
-
 }
 
 
@@ -47,7 +45,7 @@ a._requireOption
 
   margin-left: auto !important;
 
-  font-size: 12px;
+  font-size: 13px;
   line-height: 16px;
   font-weight: 500;
 
@@ -90,7 +88,7 @@ a._requireOption
 
   background: #f3f3f3;
 
-  font-size: 11px;
+  font-size: 12px;
   line-height: 14px;
   font-weight: 600;
 
@@ -109,35 +107,5 @@ a._requireOption
 .reserved-color-only {
 
   margin-top: 8px;
-
-}
-
-
-/* ========================================
-   모바일
-======================================== */
-
-@media (max-width: 767px) {
-
-  #prod_options
-  .reserved-shipping-text {
-
-    font-size: 11px;
-    line-height: 15px;
-
-  }
-
-
-  #prod_options
-  .reserved-shipping-badge {
-
-    margin-left: 4px;
-
-    padding: 2px 4px;
-
-    font-size: 10px;
-    line-height: 13px;
-
-  }
 
 }
