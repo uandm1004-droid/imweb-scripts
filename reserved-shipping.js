@@ -1,4 +1,3 @@
-<script>
 (function () {
 
   const API_URL = "https://script.google.com/macros/s/AKfycbzHZKXnGomjSslR3C355roaWa7VYpcOdtzuAS7j9ZpT2QyGZAdf5OoYSqo5_DZRqBg/exec";
@@ -1534,4 +1533,3 @@
   }
 
 })();
-</script>
