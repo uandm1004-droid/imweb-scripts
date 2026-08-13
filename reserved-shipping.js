@@ -1504,34 +1504,15 @@ console.log("RESERVED SHIPPING TEST V2");
   }
 
 
-  function escapeHtml(
-    value
-  ) {
+function escapeHtml(value) {
 
-    return String(
-      value || ""
-    )
-      .replace(
-        /&/g,
-        "&"
-      )
-      .replace(
-        /</g,
-        "<"
-      )
-      .replace(
-        />/g,
-        ">"
-      )
-      .replace(
-        /"/g,
-        """
-      )
-      .replace(
-        /'/g,
-        "'"
-      );
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 
-  }
+}
 
 })();
