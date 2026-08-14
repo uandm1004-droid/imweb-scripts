@@ -17,6 +17,8 @@ a._requireOption
 
 }
 
+
+/* 사이즈 텍스트 영역 고정 폭 */
 #prod_options
 .dropdown-item
 a._requireOption
@@ -25,22 +27,6 @@ a._requireOption
 
   flex: 0 0 80px !important;
 
-}
-
-#prod_options
-.reserved-shipping-text {
-
-  margin-left: auto !important;
-
-}
-
-/* 기존 M / L / XL 텍스트 영역 */
-#prod_options
-.dropdown-item
-a._requireOption
-> .tw-flex
-> div:first-child {
-  flex: 0 1 auto;
 }
 
 
@@ -55,11 +41,11 @@ a._requireOption
   flex-direction: row !important;
 
   align-items: center !important;
-  justify-content: flex-end !important;
+  justify-content: flex-start !important;
 
   flex-shrink: 0 !important;
 
-  margin-left: auto !important;
+  margin-left: 0 !important;
 
   font-size: 13px;
   line-height: 16px;
@@ -73,7 +59,6 @@ a._requireOption
 
 
 /* 순차 출고 날짜 */
-
 #prod_options
 .reserved-shipping-date {
 
@@ -131,5 +116,20 @@ a._requireOption
    모바일 font style
 ======================================== */
 
-.form-select-wrap .dropdown-menu .dropdown-item > a { padding: 10px !important; }
-.form-select-wrap .dropdown-menu .dropdown-item > a span { font-size: 13px; }
+.form-select-wrap
+.dropdown-menu
+.dropdown-item
+> a {
+
+  padding: 10px !important;
+
+}
+
+.form-select-wrap
+.dropdown-menu
+.dropdown-item
+> a span {
+
+  font-size: 13px;
+
+}
