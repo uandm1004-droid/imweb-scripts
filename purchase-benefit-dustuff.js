@@ -16,9 +16,11 @@
   if (!currentIdx) return;
 
 
-  let benefitSettings = [];
+  let sheetBenefits = [];
 
-  const discountCache = new Map();
+  const discountCache =
+    new Map();
+
 
 
   /* ========================================
@@ -43,7 +45,12 @@
 
     .then(function (data) {
 
-      benefitSettings =
+      /*
+        현재 사이트 + 현재 상품 +
+        기능=구매혜택만 추출
+      */
+
+      sheetBenefits =
         data.filter(function (item) {
 
           return (
@@ -56,12 +63,7 @@
         });
 
 
-      if (!benefitSettings.length) {
-        return;
-      }
-
-
-      initBenefit();
+      initPurchaseBenefit();
 
     })
 
@@ -72,6 +74,14 @@
         error
       );
 
+
+      /*
+        시트 연결 실패 시에도
+        기존 HTML 방식은 살림
+      */
+
+      initLegacyBenefit();
+
     });
 
 
@@ -80,24 +90,88 @@
      2. 구매혜택 초기화
   ======================================== */
 
-  function initBenefit() {
+  function initPurchaseBenefit() {
 
     /*
-      아임웹 상품 정보가 늦게 생성되는 경우를 위해
-      MutationObserver 사용
+      시트에서 실제 사용 가능한 설정이 있는지 확인
     */
 
-    if (injectBenefit()) {
+    const validSheetBenefits =
+      sheetBenefits.filter(function (item) {
+
+        return (
+          cleanText(item.message) &&
+          cleanText(item.setupProductId)
+        );
+
+      });
+
+
+    /*
+      구글시트 설정 있음
+      → 신규 방식
+    */
+
+    if (validSheetBenefits.length) {
+
+      waitForDeliverySection(function (deliverySection) {
+
+        injectSheetBenefit(
+          deliverySection,
+          validSheetBenefits
+        );
+
+      });
+
       return;
+
+    }
+
+
+    /*
+      구글시트 설정 없음
+      → 기존 상품 HTML 방식
+    */
+
+    initLegacyBenefit();
+
+  }
+
+
+
+  /* ========================================
+     3. 배송정보 영역 대기
+  ======================================== */
+
+  function waitForDeliverySection(callback) {
+
+    const immediate =
+      getDeliverySection();
+
+
+    if (immediate) {
+
+      callback(immediate);
+      return;
+
     }
 
 
     const observer =
       new MutationObserver(function () {
 
-        if (injectBenefit()) {
-          observer.disconnect();
+        const deliverySection =
+          getDeliverySection();
+
+
+        if (!deliverySection) {
+          return;
         }
+
+
+        observer.disconnect();
+
+        callback(deliverySection);
 
       });
 
@@ -114,25 +188,27 @@
 
 
 
+  function getDeliverySection() {
+
+    return document.querySelector(
+      ".prod-detail-section.prod-detail-section--delivery"
+    );
+
+  }
+
+
+
   /* ========================================
-     3. 구매혜택 생성
+     4. 구글시트 방식 구매혜택
   ======================================== */
 
-  function injectBenefit() {
-
-    const deliverySection =
-      document.querySelector(
-        ".prod-detail-section.prod-detail-section--delivery"
-      );
-
-
-    if (!deliverySection) {
-      return false;
-    }
-
+  async function injectSheetBenefit(
+    deliverySection,
+    settings
+  ) {
 
     /*
-      이미 생성했다면 중복 생성 방지
+      중복 방지
     */
 
     if (
@@ -140,50 +216,9 @@
         ".purchase-benefit-injected"
       )
     ) {
-      return true;
+      return;
     }
 
-
-    const validSettings =
-      benefitSettings.filter(function (item) {
-
-        return (
-          cleanText(item.setupProductId) &&
-          cleanText(item.message)
-        );
-
-      });
-
-
-    if (!validSettings.length) {
-      return true;
-    }
-
-
-    /*
-      비동기 처리 시작
-    */
-
-    createBenefitSection(
-      deliverySection,
-      validSettings
-    );
-
-
-    return true;
-
-  }
-
-
-
-  /* ========================================
-     4. 구매혜택 영역 생성
-  ======================================== */
-
-  async function createBenefitSection(
-    deliverySection,
-    settings
-  ) {
 
     const items = [];
 
@@ -210,6 +245,10 @@
       }
 
 
+      /*
+        연결된 셋업 상품 할인율 조회
+      */
+
       const discount =
         await getSetupDiscount(
           setupProductId
@@ -217,16 +256,19 @@
 
 
       /*
-        할인율이 있으면
+        예:
 
-        15% 할인 받고 셋업으로 구매하러 가기→
-
-        할인율을 못 찾으면
-
+        시트:
         할인 받고 셋업으로 구매하러 가기→
+
+        셋업 상품:
+        15%
+
+        결과:
+        15% 할인 받고 셋업으로 구매하러 가기→
       */
 
-      const text =
+      const finalText =
         discount
           ? discount + " " + baseMessage
           : baseMessage;
@@ -234,7 +276,7 @@
 
       items.push({
 
-        text: text,
+        text: finalText,
 
         href:
           buildProductUrl(
@@ -252,8 +294,7 @@
 
 
     /*
-      비동기 처리 중 다른 호출에서
-      이미 생성했을 가능성 방지
+      비동기 처리 중 중복 생성 방지
     */
 
     if (
@@ -266,27 +307,14 @@
 
 
 
-    /* ========================================
-       배송 영역 하단 스타일
-    ======================================== */
-
-    deliverySection.style.setProperty(
-      "border-bottom",
-      "1px solid rgba(30, 30, 30, 0.1)",
-      "important"
-    );
-
-
-    deliverySection.style.setProperty(
-      "padding-bottom",
-      "12px",
-      "important"
+    applyDeliverySectionStyle(
+      deliverySection
     );
 
 
 
     /* ========================================
-       구매혜택 영역
+       구매 혜택 섹션 생성
     ======================================== */
 
     const benefitWrap =
@@ -295,6 +323,7 @@
 
     benefitWrap.className =
       "purchase-benefit-injected prod-detail-section";
+
 
 
     const title =
@@ -307,6 +336,7 @@
 
     title.textContent =
       "구매 혜택";
+
 
 
     const content =
@@ -328,6 +358,7 @@
         "prod-detail-section__item";
 
 
+
       const link =
         document.createElement("a");
 
@@ -340,26 +371,36 @@
         item.text;
 
 
-      paragraph.appendChild(link);
 
-      content.appendChild(paragraph);
+      paragraph.appendChild(
+        link
+      );
+
+
+      content.appendChild(
+        paragraph
+      );
 
     });
 
 
 
-    benefitWrap.appendChild(title);
+    benefitWrap.appendChild(
+      title
+    );
 
-    benefitWrap.appendChild(content);
+
+    benefitWrap.appendChild(
+      content
+    );
 
 
 
     /*
-      예약배송 기능도 사용하는 사이트라면
-      예약배송 상세정보 아래에 배치
+      예약배송 상세 정보가 있는 사이트라면
+      그 아래 배치.
 
-      예약배송이 없으면
-      기본 배송정보 바로 아래에 배치
+      없으면 기존 배송정보 바로 아래.
     */
 
     const reserveNotice =
@@ -383,7 +424,195 @@
 
 
   /* ========================================
-     5. 셋업 상품 할인율 가져오기
+     5. 기존 HTML 호환 방식
+  ======================================== */
+
+  function initLegacyBenefit() {
+
+    function injectLegacyBenefit() {
+
+      const deliverySection =
+        getDeliverySection();
+
+
+      if (!deliverySection) {
+        return false;
+      }
+
+
+      /*
+        이미 시트/기존 방식 중 하나가 출력됐다면
+        중복 생성하지 않음
+      */
+
+      if (
+        document.querySelector(
+          ".purchase-benefit-injected"
+        )
+      ) {
+        return true;
+      }
+
+
+      /*
+        기존 상품페이지 HTML
+
+        .benefit-setup
+      */
+
+      const targets = [
+        ...document.querySelectorAll(
+          "#prod_detail_body .benefit-setup"
+        )
+      ]
+        .reverse()
+        .filter(Boolean);
+
+
+      if (!targets.length) {
+        return false;
+      }
+
+
+      let injected =
+        false;
+
+
+      targets.forEach(function (target) {
+
+        const originalWrap =
+          target.querySelector(
+            ".benefit-wrap"
+          );
+
+
+        if (!originalWrap) {
+          return;
+        }
+
+
+        const cloned =
+          originalWrap.cloneNode(true);
+
+
+        cloned.classList.add(
+          "purchase-benefit-injected"
+        );
+
+
+        applyDeliverySectionStyle(
+          deliverySection
+        );
+
+
+        /*
+          예약배송 상세 섹션 존재 시
+          그 아래에 구매혜택 배치
+        */
+
+        const reserveNotice =
+          document.querySelector(
+            ".prod-detail-section--reserve-notice"
+          );
+
+
+        const anchor =
+          reserveNotice ||
+          deliverySection;
+
+
+        anchor.insertAdjacentElement(
+          "afterend",
+          cloned
+        );
+
+
+        injected =
+          true;
+
+      });
+
+
+      return injected;
+
+    }
+
+
+
+    /*
+      즉시 한 번 확인
+    */
+
+    if (
+      injectLegacyBenefit()
+    ) {
+      return;
+    }
+
+
+
+    /*
+      아임웹 DOM 늦게 생성되는 경우 대응
+    */
+
+    const observer =
+      new MutationObserver(function () {
+
+        if (
+          injectLegacyBenefit()
+        ) {
+
+          observer.disconnect();
+
+        }
+
+      });
+
+
+    observer.observe(
+      document.body,
+      {
+        childList: true,
+        subtree: true
+      }
+    );
+
+  }
+
+
+
+  /* ========================================
+     6. 배송 영역 스타일
+  ======================================== */
+
+  function applyDeliverySectionStyle(
+    deliverySection
+  ) {
+
+    if (!deliverySection) {
+      return;
+    }
+
+
+    deliverySection.style.setProperty(
+      "border-bottom",
+      "1px solid rgba(30, 30, 30, 0.1)",
+      "important"
+    );
+
+
+    deliverySection.style.setProperty(
+      "padding-bottom",
+      "12px",
+      "important"
+    );
+
+  }
+
+
+
+  /* ========================================
+     7. 셋업 상품 할인율 조회
   ======================================== */
 
   function getSetupDiscount(
@@ -391,21 +620,26 @@
   ) {
 
     const key =
-      String(setupProductId);
+      String(
+        setupProductId
+      );
 
 
     /*
-      동일 상품을 반복해서 불러오지 않도록
-      페이지 내 캐시
+      같은 페이지 안에서
+      같은 셋업 상품을 반복 조회하지 않음
     */
 
     if (
       discountCache.has(key)
     ) {
 
-      return discountCache.get(key);
+      return discountCache.get(
+        key
+      );
 
     }
+
 
 
     const request =
@@ -446,7 +680,7 @@
 
 
           /*
-            아임웹 할인율
+            더스터프 셋업 상품 할인율
 
             <span class="sale_percentage">
               15%
@@ -485,6 +719,7 @@
         });
 
 
+
     discountCache.set(
       key,
       request
@@ -498,7 +733,7 @@
 
 
   /* ========================================
-     6. 상품 URL 생성
+     8. 셋업 상품 URL 생성
   ======================================== */
 
   function buildProductUrl(
@@ -537,6 +772,7 @@
       .trim();
 
   }
+
 
 
   function normalizeDomain(value) {
