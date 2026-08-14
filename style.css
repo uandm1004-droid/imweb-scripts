@@ -13,10 +13,26 @@ a._requireOption
   flex-direction: row !important;
 
   align-items: center !important;
-  justify-content: space-between !important;
+  justify-content: flex-start !important;
 
 }
 
+#prod_options
+.dropdown-item
+a._requireOption
+> .tw-flex
+> div:first-child {
+
+  flex: 0 0 80px !important;
+
+}
+
+#prod_options
+.reserved-shipping-text {
+
+  margin-left: auto !important;
+
+}
 
 /* 기존 M / L / XL 텍스트 영역 */
 #prod_options
