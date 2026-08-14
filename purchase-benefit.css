@@ -1,0 +1,30 @@
+/* ========================================
+   구매 혜택
+======================================== */
+
+.purchase-benefit-injected {
+  display: flex !important;
+}
+
+
+/* 구매 혜택 링크 */
+
+.purchase-benefit-injected
+.prod-detail-section__item {
+  margin: 0;
+}
+
+
+.purchase-benefit-injected
+.prod-detail-section__item a {
+  color: inherit;
+  text-decoration: none;
+}
+
+
+/* 마우스 오버 */
+
+.purchase-benefit-injected
+.prod-detail-section__item a:hover {
+  text-decoration: underline;
+}
