@@ -1,4 +1,3 @@
-<script>
 (function () {
 
   const API_URL =
@@ -413,4 +412,3 @@
   }
 
 })();
-</script>
