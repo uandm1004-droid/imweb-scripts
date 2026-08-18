@@ -35,6 +35,7 @@
       productSettings = data.filter(item => (
         normalizeDomain(item.domain) === currentDomain &&
         String(item.productId) === String(currentIdx) &&
+        cleanText(item.type) === "예약배송" &&
         item.enabled !== false
       ));
 
