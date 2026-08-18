@@ -2,33 +2,9 @@
    더스터프 구매 혜택
 ======================================== */
 
-.purchase-benefit-injected {
-  display: flex !important;
-}
-
-
-/* 구매 혜택 내부 문구 */
-
-.purchase-benefit-injected
-.prod-detail-section__item {
-  margin: 0;
-}
-
-
-/* 링크 */
-
-.purchase-benefit-injected
-.prod-detail-section__item
-a {
-  color: inherit;
-  text-decoration: none;
-}
-
-
-/* 마우스 오버 */
-
-.purchase-benefit-injected
-.prod-detail-section__item
-a:hover {
-  text-decoration: underline;
-}
+  .benefit-injected a,
+  .benefit-injected a:hover,
+  .benefit-wrap .prod-detail-section__title,
+  .benefit-wrap p{
+    color: #0000ff !important;
+  }
