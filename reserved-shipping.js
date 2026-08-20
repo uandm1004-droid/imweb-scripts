@@ -1017,7 +1017,10 @@
         notice,
         restockButton
       );
-    
+      
+      // 재입고 알림 버튼은 기존처럼 오른쪽 끝에 고정
+      restockButton.style.marginLeft = "auto";
+      
     } else {
     
       flex.appendChild(
