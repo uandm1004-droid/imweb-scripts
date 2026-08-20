@@ -1000,7 +1000,31 @@
       M        예약배송 문구
     */
 
-    flex.appendChild(notice);
+    /*
+      품절 옵션에 재입고 알림 버튼이 있으면
+      예약배송 문구를 버튼 앞에 삽입
+    */
+    
+    const restockButton =
+      flex.querySelector(
+        ".btn-restock"
+      );
+    
+    
+    if (restockButton) {
+    
+      flex.insertBefore(
+        notice,
+        restockButton
+      );
+    
+    } else {
+    
+      flex.appendChild(
+        notice
+      );
+    
+    }
 
 
     dropdownItem.classList.add(
