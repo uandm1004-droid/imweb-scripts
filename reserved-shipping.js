@@ -857,59 +857,86 @@
     key,
     message
   ) {
-
+  
     if (!dropdownItem) return;
-
-
+  
+  
+    const link =
+      dropdownItem.querySelector(
+        "a._requireOption"
+      );
+  
+  
+    if (!link) return;
+  
+  
+    const flex =
+      link.querySelector(
+        ".tw-flex"
+      );
+  
+  
+    if (!flex) return;
+  
+  
+    /*
+      재입고 알림 버튼은
+      예약배송 여부와 상관없이 항상 오른쪽 끝
+    */
+    const restockButton =
+      flex.querySelector(
+        ".btn-restock"
+      );
+  
+  
+    if (restockButton) {
+  
+      restockButton.style.marginLeft =
+        "auto";
+  
+    }
+  
+  
     const existing =
       dropdownItem.querySelector(
         ".reserved-shipping-text[data-reserved-key]"
       );
-
-
-
+  
+  
     /*
       예약배송 대상이 아닌 옵션
     */
-
     if (!message) {
-
+  
       if (existing) {
         existing.remove();
       }
-
-
+  
+  
       dropdownItem.classList.remove(
         "has-reserved-shipping"
       );
-
-
+  
+  
       return;
-
+  
     }
-
-
-
+  
+  
     /*
       이미 같은 옵션의 예약배송 문구 존재
     */
-
     if (
       existing &&
       existing.dataset.reservedKey === key
     ) {
-
-
+  
       const dateEl =
         existing.querySelector(
           ".reserved-shipping-date"
         );
-
-
-      /*
-        시트 문구만 변경된 경우
-      */
-
+  
+  
       if (
         dateEl &&
         cleanText(
@@ -918,71 +945,45 @@
         !==
         cleanText(message)
       ) {
-
+  
         dateEl.textContent =
           message;
-
+  
       }
-
-
+  
+  
       return;
-
+  
     }
-
-
-
+  
+  
     /*
       다른 key의 기존 문구 제거
     */
-
     if (existing) {
+  
       existing.remove();
+  
     }
-
-
-
-    const link =
-      dropdownItem.querySelector(
-        "a._requireOption"
-      );
-
-
-    if (!link) return;
-
-
-
-    /*
-      아임웹 기본 flex 행
-    */
-
-    const flex =
-      link.querySelector(
-        ".tw-flex"
-      );
-
-
-    if (!flex) return;
-
-
-
+  
+  
     /*
       예약배송 문구 생성
     */
-
     const notice =
       document.createElement(
         "span"
       );
-
-
+  
+  
     notice.className =
       "reserved-shipping-text";
-
-
+  
+  
     notice.dataset.reservedKey =
       key;
-
-
+  
+  
     notice.innerHTML =
       '<span class="reserved-shipping-date">'
       + escapeHtml(message)
@@ -990,51 +991,41 @@
       + '<span class="reserved-shipping-badge">'
       + '예약배송'
       + '</span>';
-
-
-
+  
+  
     /*
-      M/L/XL 영역의 형제 요소로 삽입
-
-      결과:
-      M        예약배송 문구
+      품절 + 재입고 알림 버튼이 있는 경우
+  
+      사이즈 | 예약배송 | 재입고 알림
+  
+      순서로 배치
     */
-
-    /*
-      품절 옵션에 재입고 알림 버튼이 있으면
-      예약배송 문구를 버튼 앞에 삽입
-    */
-    
-    const restockButton =
-      flex.querySelector(
-        ".btn-restock"
-      );
-    
-    
     if (restockButton) {
-    
+  
       flex.insertBefore(
         notice,
         restockButton
       );
-      
-      // 재입고 알림 버튼은 기존처럼 오른쪽 끝에 고정
-      restockButton.style.marginLeft = "auto";
-      
-    } else {
-    
+  
+    }
+  
+    /*
+      일반 옵션
+    */
+    else {
+  
       flex.appendChild(
         notice
       );
-    
+  
     }
-
-
+  
+  
     dropdownItem.classList.add(
       "has-reserved-shipping"
     );
 
-  }
+}
 
 
 
