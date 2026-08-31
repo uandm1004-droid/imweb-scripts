@@ -331,97 +331,91 @@
 
 
 
-  /* ========================================
-     5. 구매혜택 실제 삽입
-  ======================================== */
+/* ========================================
+   5. 구매혜택 실제 삽입
+======================================== */
 
-  function injectBenefit(
-    deliveryGuide
-  ) {
+function injectBenefit(
+  deliveryGuide
+) {
 
-    if (!deliveryGuide) return;
-
-
-    const targets = [
-      ...document.querySelectorAll(
-        "#prod_detail_body .benefit-setup--sheet"
-      )
-    ]
-      .reverse()
-      .filter(Boolean);
+  if (!deliveryGuide) return;
 
 
-    if (!targets.length) return;
-
-
-    /*
-      배송정보 하단 스타일
-    */
-    deliveryGuide.style.setProperty(
-      "border-bottom",
-      "1px solid rgba(30, 30, 30, 0.1)",
-      "important"
+  /*
+    상품 상세정보 전체 영역
+  */
+  const detailWrap =
+    document.querySelector(
+      "._item_detail_wrap"
     );
 
 
-    deliveryGuide.style.setProperty(
-      "padding-bottom",
-      "12px",
-      "important"
+  if (!detailWrap) return;
+
+
+  const targets = [
+    ...document.querySelectorAll(
+      "#prod_detail_body .benefit-setup--sheet"
+    )
+  ]
+    .reverse()
+    .filter(Boolean);
+
+
+  if (!targets.length) return;
+
+
+  /*
+    배송정보 하단 구분선
+  */
+  deliveryGuide.style.setProperty(
+    "border-bottom",
+    "1px solid rgba(30, 30, 30, 0.1)",
+    "important"
+  );
+
+
+  deliveryGuide.style.setProperty(
+    "padding-bottom",
+    "12px",
+    "important"
+  );
+
+
+  /*
+    구매혜택을
+    _item_detail_wrap의 마지막 자식으로 삽입
+  */
+  targets.forEach(function (target) {
+
+    const originalWrap =
+      target.querySelector(
+        ".benefit-wrap"
+      );
+
+
+    if (!originalWrap) return;
+
+
+    const cloned =
+      originalWrap.cloneNode(
+        true
+      );
+
+
+    cloned.classList.add(
+      "benefit-injected"
     );
 
 
-    /*
-      예약배송 상세정보가 존재하면
-      예약배송 아래에 구매혜택 배치
+    detailWrap.appendChild(
+      cloned
+    );
 
-      없으면 기존 배송정보 아래
-    */
-    const reserveNotice =
-      document.querySelector(
-        ".prod-detail-section--reserve-notice"
-      );
+  });
 
-
-    const anchor =
-      reserveNotice ||
-      deliveryGuide;
-
-
-    /*
-      기존 방식과 동일하게 복제하여 노출
-    */
-    targets.forEach(function (target) {
-
-      const originalWrap =
-        target.querySelector(
-          ".benefit-wrap"
-        );
-
-
-      if (!originalWrap) return;
-
-
-      const cloned =
-        originalWrap.cloneNode(
-          true
-        );
-
-
-      cloned.classList.add(
-        "benefit-injected"
-      );
-
-
-      anchor.insertAdjacentElement(
-        "afterend",
-        cloned
-      );
-
-    });
-
-  }
-
+}
 
 
   /* ========================================
