@@ -5,6 +5,21 @@
   const COLOR_NAMES = ["color", "colour", "컬러", "색상"];
   const SIZE_NAMES  = ["size", "사이즈"];
 
+  const DOMAIN_ALIASES = {
+    "nvsbf.imweb.me": "nvsbf.com",
+    "dustuff.imweb.me": "dustuff.co.kr",
+    "lessbless.imweb.me": "lessbless.com",
+    "roseyou.imweb.me": "roseyou.kr",
+    "ridiculous.imweb.me": "ridiculous.co.kr",
+    "mascolino.imweb.me": "mascolino.co.kr",
+    "sonador.imweb.me": "sonador.co.kr",
+    "armykaji.imweb.me": "armykaji.com",
+    "estrellas.imweb.me": "estrellas.co.kr",
+    "worknwalk.imweb.me": "worknwalk.com",
+    "closeby2.imweb.me": "closeby2.com",
+    "kissofsummer.imweb.me": "kissofsummer.co.kr"
+  };
+  
   const currentDomain = normalizeDomain(window.location.hostname);
   const currentIdx = new URLSearchParams(window.location.search).get("idx");
 
@@ -32,12 +47,12 @@
     })
     .then(data => {
 
-      productSettings = data.filter(item => (
-        normalizeDomain(item.domain) === currentDomain &&
-        String(item.productId) === String(currentIdx) &&
-        cleanText(item.type) === "예약배송" &&
-        item.enabled !== false
-      ));
+    productSettings = data.filter(item => (
+      getCanonicalDomain(item.domain) === getCanonicalDomain(currentDomain) &&
+      String(item.productId) === String(currentIdx) &&
+      cleanText(item.type) === "예약배송" &&
+      item.enabled !== false
+    ));
 
       if (!productSettings.length) return;
       
@@ -1749,6 +1764,16 @@ function convertShippingDate(message) {
 
   }
 
+  
+  function getCanonicalDomain(value) {
+  
+    const domain =
+      normalizeDomain(value);
+  
+    return DOMAIN_ALIASES[domain] || domain;
+  
+  }
+  
 
   function isColorName(
     value
