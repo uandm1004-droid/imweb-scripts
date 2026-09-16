@@ -6,17 +6,17 @@
   const SIZE_NAMES  = ["size", "사이즈"];
 
   const DOMAIN_ALIASES = {
-    "nvsbf.imweb.me": "nvsbf.com",
-    "dustuff.imweb.me": "dustuff.co.kr",
+    "neverseenbefore.imweb.me": "nvsbf.com",
+    "dustystuff.imweb.me": "dustuff.co.kr",
     "lessbless.imweb.me": "lessbless.com",
-    "roseyou.imweb.me": "roseyou.kr",
+    "roseu.imweb.me": "roseyou.kr",
     "ridiculous.imweb.me": "ridiculous.co.kr",
     "mascolino.imweb.me": "mascolino.co.kr",
     "sonador.imweb.me": "sonador.co.kr",
     "armykaji.imweb.me": "armykaji.com",
     "estrellas.imweb.me": "estrellas.co.kr",
     "worknwalk.imweb.me": "worknwalk.com",
-    "closeby2.imweb.me": "closeby2.com",
+    "closebye.imweb.me": "closeby2.com",
     "kissofsummer.imweb.me": "kissofsummer.co.kr"
   };
   
